@@ -58,7 +58,10 @@ services:
       - control-system
     environment:
       TANGO_HOST: control-system:10000
-    command: ["sleep", "3600"]
+    command: ["sleep", "infinity"]
+    working_dir: /mnt
+    volumes:
+      - ./sub:/mnt/
 
   pytango-ext :
     image: tangocs/tango-pytango
@@ -67,16 +70,19 @@ services:
     depends_on:
       - gateway
     environment:
-      TANGO_HOST: gateway:10000
-    command: ["sleep", "3600"]
+      TANGO_HOST: tango-gateway_gateway_1.tango-gateway_net-ext:10000  # if you change docker-compose project name (i.e. change parent folder name) you have to modify it accordingly
+    command: ["sleep", "infinity"]
+    working_dir: /mnt
+    volumes:
+      - ./sub:/mnt/
 
   gateway:
     build:
       context: .
     hostname: gateway
     networks:
-      - net-int
-      - net-ext
+      net-ext:
+        priority: 1000  # this makes this interface first - make CORBA working
     restart: on-failure
     depends_on:
       - control-system
@@ -84,7 +90,7 @@ services:
     environment:
       TANGO_GATEWAY_BIND: 0.0.0.0
       TANGO_GATEWAY_PORT: 10000
-      TANGO_GATEWAY_HOST: control-system:10000
+      TANGO_GATEWAY_HOST: tango-gateway_control-system_1.tango-gateway_net-in:10000  # if you change docker-compose project name (i.e. change parent folder name) you have to modify it accordingly
     command: ["python3", "-m", "tangogateway", "--verbose"]
     volumes:
       - ./tangogateway:/mnt/tangogateway
